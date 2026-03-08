@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"strings"
 
 	"github.com/yehezkiel1086/go-redis-job-listings/internal/adapter/storage/postgres"
 	"github.com/yehezkiel1086/go-redis-job-listings/internal/core/domain"
@@ -18,12 +19,12 @@ func NewUserRepository(db *postgres.DB) *UserRepository {
 }
 
 func (r *UserRepository) CreateUser(ctx context.Context, user *domain.User) (*domain.User, error) {
-	db := r.db.GetDB()
-
-	if err := db.WithContext(ctx).Create(user).Error; err != nil {
+	if err := r.db.GetDB().WithContext(ctx).Create(user).Error; err != nil {
+		if strings.Contains(err.Error(), "duplicate key") {
+			return nil, domain.ErrDuplicateEmail
+		}
 		return nil, err
 	}
-
 	return user, nil
 }
 

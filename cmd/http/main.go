@@ -40,19 +40,26 @@ func main() {
 	slog.Info("postgres db migrated successfully")
 
 	// init redis
-	redis, err := redis.New(ctx, conf.Redis)
+	cache, err := redis.New(ctx, conf.Redis)
 	handleError(err, "failed to init redis")
 	slog.Info("redis initialized successfully")
 
-	defer redis.Close()
+	defer cache.Close()
 
 	// dependency injection
 	userRepo := repository.NewUserRepository(db)
-	userSvc := service.NewUserService(userRepo)
+	userSvc := service.NewUserService(userRepo, cache)
 	userHandler := handler.NewUserHandler(userSvc)
 
+	authSvc := service.NewAuthService(conf.JWT, userRepo, cache)
+	authHandler := handler.NewAuthHandler(conf.JWT, authSvc)
+
 	// init router
-	router, err := handler.New(userHandler)
+	router, err := handler.New(
+		conf.JWT,
+		userHandler,
+		authHandler,
+	)
 	handleError(err, "failed to init router")
 	slog.Info("router initialized successfully")
 

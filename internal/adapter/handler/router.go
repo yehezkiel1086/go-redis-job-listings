@@ -3,6 +3,7 @@ package handler
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/yehezkiel1086/go-redis-job-listings/internal/adapter/config"
+	"github.com/yehezkiel1086/go-redis-job-listings/internal/core/domain"
 )
 
 type Router struct {
@@ -10,20 +11,30 @@ type Router struct {
 }
 
 func New(
+	conf *config.JWT,
 	userHandler *UserHandler,
+	authHandler *AuthHandler,
 ) (*Router, error) {
 	r := gin.New()
 
-	// public routes
+	// RBAC
 	pb := r.Group("/api/v1")
-	{
-		// user routes
-		pb.GET("/users", userHandler.GetAllUsers)
-		pb.POST("/register", userHandler.RegisterUser)
-		pb.GET("/users/:id", userHandler.GetUserByID)
-		pb.PUT("/users/:id", userHandler.UpdateUser)
-		pb.DELETE("/users/:id", userHandler.DeleteUserByID)
-	}
+	us := pb.Group("/", Authenticate(conf))
+	ad := us.Group("/", Authorize(domain.RoleAdmin))
+
+	// public user routes
+	pb.POST("/register", userHandler.RegisterUser)
+	pb.POST("/login", authHandler.Login)
+	pb.POST("/refresh", authHandler.Refresh)
+
+	// user user routes
+	us.GET("/users/:id", AuthorizeOwnerOrAdmin(), userHandler.GetUserByID)
+	us.PUT("/users/:id", AuthorizeOwnerOrAdmin(), userHandler.UpdateUser)
+	us.DELETE("/users/:id", AuthorizeOwnerOrAdmin(), userHandler.DeleteUserByID)
+	us.POST("/logout", authHandler.Logout)
+
+	// admin user routes
+	ad.GET("/users", userHandler.GetAllUsers)
 
 	return &Router{r: r}, nil
 }
