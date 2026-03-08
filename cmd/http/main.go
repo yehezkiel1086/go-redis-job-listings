@@ -35,7 +35,7 @@ func main() {
 	slog.Info("postgres db initialized successfully", "db", conf.DB.Name)
 
 	// migrate
-	err = db.Migrate(&domain.User{})
+	err = db.Migrate(&domain.User{}, &domain.Job{}, &domain.Enrollment{})
 	handleError(err, "failed to migrate postgres db")
 	slog.Info("postgres db migrated successfully")
 
@@ -54,11 +54,21 @@ func main() {
 	authSvc := service.NewAuthService(conf.JWT, userRepo, cache)
 	authHandler := handler.NewAuthHandler(conf.JWT, authSvc)
 
+	jobRepo := repository.NewJobRepository(db)
+	jobSvc := service.NewJobService(jobRepo, cache)
+	jobHandler := handler.NewJobHandler(jobSvc)
+
+	enrollRepo := repository.NewEnrollmentRepository(db)
+	enrollSvc := service.NewEnrollmentService(enrollRepo, jobRepo, cache)
+	enrollHandler := handler.NewEnrollmentHandler(enrollSvc)
+
 	// init router
 	router, err := handler.New(
 		conf.JWT,
 		userHandler,
 		authHandler,
+		jobHandler,
+		enrollHandler,
 	)
 	handleError(err, "failed to init router")
 	slog.Info("router initialized successfully")

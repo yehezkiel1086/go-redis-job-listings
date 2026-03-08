@@ -1,3 +1,4 @@
+// domain/user.go
 package domain
 
 import "gorm.io/gorm"
@@ -16,6 +17,8 @@ type User struct {
 	Password string `json:"password" gorm:"size:255;not null"`
 	Name     string `json:"name" gorm:"size:255;not null"`
 	Role     Role   `json:"role" gorm:"not null;default:2001"`
+
+	Jobs []Job `json:"jobs,omitempty" gorm:"foreignKey:UserID"`
 }
 
 type RegisterRequest struct {
@@ -25,6 +28,7 @@ type RegisterRequest struct {
 }
 
 type UserResponse struct {
+	ID    uint   `json:"id"`
 	Email string `json:"email"`
 	Name  string `json:"name"`
 	Role  Role   `json:"role"`

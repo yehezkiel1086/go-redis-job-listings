@@ -10,4 +10,6 @@ var (
 	ErrDuplicateEmail      error = errors.New("email already registered")
 	ErrNotFound            error = errors.New("not found")
 	ErrInternalServerError error = errors.New("internal server error")
+	ErrDuplicateEnroll     error = errors.New("already enrolled in this job")
+	ErrInactiveJob         error = errors.New("job is no longer active")
 )
